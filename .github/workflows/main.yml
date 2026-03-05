@@ -2,6 +2,8 @@ name: Main
 
 on: workflow_dispatch
 
+# permissions: write-all
+
 jobs:
   Build:
     name: ${{ matrix.name }}
