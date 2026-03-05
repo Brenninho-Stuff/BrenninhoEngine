@@ -141,7 +141,6 @@ enum abstract StorageType(String) from String to String
 	var EXTERNAL_OBB = "EXTERNAL_OBB";
 	var EXTERNAL_MEDIA = "EXTERNAL_MEDIA";
 	var EXTERNAL = "EXTERNAL";
-	var EXTERNAL_GLOBAL = "EXTERNAL_GLOBAL";
 
 	public static function fromStr(str:String):StorageType
 	{
@@ -149,7 +148,6 @@ enum abstract StorageType(String) from String to String
 		final EXTERNAL_OBB = AndroidContext.getObbDir();
 		final EXTERNAL_MEDIA = AndroidEnvironment.getExternalStorageDirectory() + '/Android/media/' + lime.app.Application.current.meta.get('packageName');
 		final EXTERNAL = AndroidEnvironment.getExternalStorageDirectory() + '/.' + lime.app.Application.current.meta.get('file');
-		final EXTERNAL_GLOBAL = AndroidEnvironment.getExternalStorageDirectory() + '/.' + lime.app.Application.current.meta.get('file');
 
 		return switch (str)
 		{
@@ -157,7 +155,6 @@ enum abstract StorageType(String) from String to String
 			case "EXTERNAL_OBB": EXTERNAL_OBB;
 			case "EXTERNAL_MEDIA": EXTERNAL_MEDIA;
 			case "EXTERNAL": EXTERNAL;
-			case "EXTERNAL_GLOBAL": EXTERNAL_GLOBAL;
 			default: StorageUtil.getExternalDirectory(str) + '.' + fileLocal;
 		}
 	}
@@ -168,7 +165,6 @@ enum abstract StorageType(String) from String to String
 		final EXTERNAL_OBB = forcedPath + 'Android/obb/' + packageNameLocal;
 		final EXTERNAL_MEDIA = forcedPath + 'Android/media/' + packageNameLocal;
 		final EXTERNAL = forcedPath + '.' + fileLocal;
-		final EXTERNAL_GLOBAL = forcedPath + '.' + fileLocal;
 
 		return switch (str)
 		{
@@ -176,7 +172,6 @@ enum abstract StorageType(String) from String to String
 			case "EXTERNAL_OBB": EXTERNAL_OBB;
 			case "EXTERNAL_MEDIA": EXTERNAL_MEDIA;
 			case "EXTERNAL": EXTERNAL;
-			case "EXTERNAL_GLOBAL": EXTERNAL_GLOBAL;
 			default: StorageUtil.getExternalDirectory(str) + '.' + fileLocal;
 		}
 	}
