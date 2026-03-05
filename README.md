@@ -1,4 +1,9 @@
-![PsychionalEngineLogo](docs/img/PsychEngineMobileLogoTweak.png)
+# Friday Night Funkin' - Psych Engine v1.0.4 Template
+
+This Template for Making any Mods and Engines you want, with Mobile Support.
+
+![special](docs/img/special.png)
+
 
 Engine originally used on [Mind Games Mod](https://gamebanana.com/mods/301107), intended to be a fix for the vanilla version's many issues while keeping the casual play aspect of it. Also aiming to be an easier alternative to newbie coders.
 
@@ -16,6 +21,9 @@ Same goes for *Lua Scripts*, comment out or delete the line with `LUA_ALLOWED`, 
 For this you can head over to [the wiki](https://shadowmario.github.io/psychengine.lua)
 
 There you can learn how to use the 212 PlayState funcions in your mod!
+
+## Template Credits:
+* Ali Alafandy - Templator.
 
 ## Mobile Credits:
 * Homura - Head Porter of Psych Engine Mobile.
