@@ -1,34 +1,81 @@
-name: Windows Build (Simple)
-on: [push, pull_request]
+name: Brenninho Engine Windows Build
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 jobs:
-  build:
+  Build-Windows:
     runs-on: windows-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Haxe
+      - name: Setup Haxe 4.3.7
         uses: krdlab/setup-haxe@v1
         with:
           haxe-version: 4.3.7
 
-      - name: Install Libraries
+      - name: Cache Haxelibs
+        uses: actions/cache@v4
+        with:
+          path: |
+            %HAXELIB_PATH%
+            .haxelib
+          key: ${{ runner.os }}-haxe-v1-${{ hashFiles('**/Project.hx') }}
+          restore-keys: |
+            ${{ runner.os }}-haxe-v1-
+
+      - name: Install Dependencies (JSON-Locked)
         run: |
-          haxelib install lime 8.1.2
-          haxelib install openfl 9.3.3
-          haxelib install flixel 5.6.1
-          haxelib run lime setup
-          # Instalação rápida das dependências principais
-          haxelib install flixel-addons 3.2.2
-          haxelib install hxvlc 2.0.1
-          haxelib install tjson 1.4.0
+          # Initialize haxelib
+          haxelib setup C:/haxelib
+          
+          # Stable Versions (From your Dependency List)
+          haxelib install openfl 9.3.3 --always
+          haxelib install flixel 5.6.1 --always
+          haxelib install flixel-addons 3.2.2 --always
+          haxelib install flixel-tools 1.5.1 --always
+          haxelib install hxvlc 2.0.1 --always
+          haxelib install tjson 1.4.0 --always
+          haxelib install hxdiscord_rpc 1.2.4 --always
+          haxelib install hscript-iris 1.1.3 --always
+          haxelib install hxcpp --always
+          
+          # Specialized Git Repositories (Critical for Brenninho Engine)
+          haxelib git lime https://github.com/AlafandyPorting/lime-0.7.3 main --always
+          haxelib git linc_luajit https://github.com/AlafandyPorting/linc_luajit-0.7.3 master --always
+          haxelib git flxanimate https://github.com/ShadowMario/flxanimate.git dev --always
+          haxelib git funkin.vis https://github.com/FunkinCrew/funkVis main --always
+          haxelib git grig.audio https://gitlab.com/haxe-grig/grig.audio main --always
 
-      - name: Compile Game
-        run: haxelib run lime build windows
+      - name: Setup Lime for Alafandy Port
+        run: |
+          haxelib run lime setup -alias -y
+          haxelib run lime setup windows -y
 
-      - name: Upload Artifact
+      - name: Optimize HXCPP Compilation
+        # This forces the C++ compiler to use all 8 cores of the GitHub Runner
+        run: |
+          echo "HXCPP_COMPILE_THREADS=8" >> $env:GITHUB_ENV
+          echo "HXCPP_GC_GENERATIONAL=1" >> $env:GITHUB_ENV
+
+      - name: Compile Brenninho Engine (Release)
+        # Using Project.hx (HXP) automatically
+        run: haxelib run lime build windows -release
+
+      - name: Package Windows Build
+        shell: pwsh
+        run: |
+          $buildPath = "export/release/windows/bin"
+          $zipName = "BrenninhoEngine-Windows-Build.zip"
+          Compress-Archive -Path "$buildPath/*" -DestinationPath "$zipName"
+
+      - name: Upload Binary Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Windows-Build
-          path: export/release/windows/bin
+          name: Brenninho-Engine-Win64
+          path: BrenninhoEngine-Windows-Build.zip
+          if-no-files-found: error
