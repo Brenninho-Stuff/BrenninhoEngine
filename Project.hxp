@@ -1,0 +1,136 @@
+import lime.project.*;
+import sys.FileSystem;
+import haxe.io.Path;
+
+class Project extends DefaultProject {
+    
+    // Core Engine Constants
+    private static inline var ENGINE_VERSION:String = "0.2.8-ADVANCED";
+    private static inline var HAXE_TARGET_VER:String = "4.3.7";
+
+    public function new() {
+        super();
+
+        // _________________________ Application Metadata _________________________
+        meta.title = "Friday Night Funkin': Brenninho Engine";
+        meta.packageName = "com.brenninho.advancedengine";
+        meta.version = ENGINE_VERSION;
+        meta.company = "Brenninho-Stuff";
+        app.main = "Main";
+        app.file = "BrenninhoEngine";
+        
+        // Target-specific App IDs (Switch/Console ready)
+        set("APP_ID", "0x0100f6c013bbc000");
+
+        // ______________________ Advanced Compiler Tuning ______________________
+        // Enabling Haxe 4.3.7 features and silencing legacy noise
+        haxedefs.set("message.reporting", "pretty"); 
+        haxedefs.set("no-deprecation-warnings", "1");
+        haxedefs.set("hscriptPos", "1"); // Accurate HScript error line reporting
+
+        // _________________________ Platform Logic _________________________
+        var isDesktop = (target == Platform.WINDOWS || target == Platform.LINUX || target == Platform.MAC);
+        var isMobile = (target == Platform.ANDROID || target == Platform.IOS);
+        var isWeb = (target == Platform.HTML5);
+
+        setupDefinitions(isDesktop, isMobile, isWeb);
+        setupWindow();
+        setupLibraries(isDesktop, isMobile, isWeb);
+        setupAssetPipeline(isWeb);
+        setupOptimizationFlags();
+    }
+
+    private function setupDefinitions(desktop:Bool, mobile:Bool, web:Bool) {
+        if (desktop || mobile) {
+            haxedefs.set("MODS_ALLOWED", "1");
+            haxedefs.set("HSCRIPT_ALLOWED", "1");
+        }
+
+        if (desktop) {
+            haxedefs.set("LUA_ALLOWED", "1");
+            haxedefs.set("DISCORD_ALLOWED", "1");
+            haxedefs.set("MULTITHREADED_LOADING", "1"); 
+        }
+
+        if (mobile) {
+            haxedefs.set("MOBILE_RUNTIME", "1");
+            haxedefs.set("SHARE_MOBILE_FILES", "1");
+        }
+        
+        haxedefs.set("VIDEOS_ALLOWED", "1");
+        haxedefs.set("ACHIEVEMENTS_ALLOWED", "1");
+    }
+
+    private function setupWindow() {
+        window.width = 1280;
+        window.height = 720;
+        window.fps = 144; // High refresh rate support
+        window.background = 0x000000;
+        window.hardware = true;
+        window.vSync = false; 
+        window.allowHighDPI = true;
+
+        if (target == Platform.ANDROID || target == Platform.IOS) {
+            window.fullscreen = true;
+            window.orientation = Orientation.LANDSCAPE;
+            haxedefs.set("FLX_NO_MOUSE", "1");
+        }
+    }
+
+    private function setupLibraries(desktop:Bool, mobile:Bool, web:Bool) {
+        // High-performance Core Stack
+        library.add(new Library("flixel"));
+        library.add(new Library("flixel-addons", "3.2.2"));
+        library.add(new Library("tjson", "1.4.0"));
+        library.add(new Library("flxanimate"));
+        
+        // Video Engine: hxvlc is the current industry standard for FNF
+        library.add(new Library("hxvlc"));
+
+        // Scripting Internals
+        if (haxedefs.exists("LUA_ALLOWED")) library.add(new Library("linc_luajit"));
+        if (haxedefs.exists("HSCRIPT_ALLOWED")) library.add(new Library("hscript-iris"));
+        
+        // Desktop RPC
+        if (desktop) library.add(new Library("hxdiscord_rpc"));
+    }
+
+    private function setupAssetPipeline(web:Bool) {
+        var audioExt = web ? "*.mp3" : "*.ogg";
+        var filter = web ? ["*.mp3"] : ["*.ogg"];
+
+        // Smart asset loading to prevent memory bloat on HTML5/Mobile
+        assets.add(new AssetPath("assets/fonts", "assets/fonts", null));
+        assets.add(new AssetPath("assets/shared", "assets/shared", null, filter));
+        assets.add(new AssetPath("assets/songs", "assets/songs", null, filter));
+        
+        // Embed core UI assets for zero-latency loading
+        var coreUI = new AssetPath("assets/embed", "assets/embed", null, filter);
+        coreUI.embed = true;
+        assets.add(coreUI);
+
+        if (haxedefs.exists("MODS_ALLOWED")) {
+            assets.add(new AssetPath("example_mods", "mods", null, null, false));
+        }
+    }
+
+    private function setupOptimizationFlags() {
+        // C++ Critical Exception Handling
+        if (target == Platform.WINDOWS || target == Platform.ANDROID) {
+            haxedefs.set("HXCPP_CHECK_POINTER", "1");
+            haxedefs.set("HXCPP_STACK_LINE", "1");
+            haxedefs.set("HXCPP_STACK_TRACE", "1");
+            haxedefs.set("HXCPP_CATCH_SEGV", "1");
+            haxedefs.set("HXCPP_TELEMETRY", "0"); // Disable to boost FPS
+        }
+
+        // Garbage Collector Tuning (Advanced)
+        haxedefs.set("HXCPP_GC_GENERATIONAL", "1"); // Modern generational GC
+        
+        // HTML5 Performance
+        if (target == Platform.HTML5) {
+            haxedefs.set("canvas", "1"); // Force canvas if WebGL fails
+            haxedefs.set("dom", "0");
+        }
+    }
+}
