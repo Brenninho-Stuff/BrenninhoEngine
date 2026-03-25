@@ -5,7 +5,7 @@ import haxe.io.Path;
 class Project extends DefaultProject {
     
     // Core Engine Constants
-    private static inline var ENGINE_VERSION:String = "0.2.8-ADVANCED";
+    private static inline var ENGINE_VERSION:String = "0.2.8";
     private static inline var HAXE_TARGET_VER:String = "4.3.7";
 
     public function new() {
@@ -13,7 +13,7 @@ class Project extends DefaultProject {
 
         // _________________________ Application Metadata _________________________
         meta.title = "Friday Night Funkin': Brenninho Engine";
-        meta.packageName = "com.brenninho.advancedengine";
+        meta.packageName = "com.brenninho.brenninhoengine";
         meta.version = ENGINE_VERSION;
         meta.company = "Brenninho-Stuff";
         app.main = "Main";
