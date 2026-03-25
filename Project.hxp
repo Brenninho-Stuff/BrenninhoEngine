@@ -1,136 +1,112 @@
 import lime.project.*;
 import sys.FileSystem;
-import haxe.io.Path;
+import sys.io.Process;
 
 class Project extends DefaultProject {
-    
-    // Core Engine Constants
-    private static inline var ENGINE_VERSION:String = "0.2.8";
-    private static inline var HAXE_TARGET_VER:String = "4.3.7";
+
+    // 1. Dependency Definition Layer (Locked to your JSON specs)
+    private static var DEPENDENCIES:Array<Dynamic> = [
+        { name: "lime",          type: "git",      url: "https://github.com/AlafandyPorting/lime-0.7.3", ref: "main" },
+        { name: "openfl",        type: "haxelib",  ver: "9.3.3" },
+        { name: "flixel",        type: "haxelib",  ver: "5.6.1" },
+        { name: "flixel-addons", type: "haxelib",  ver: "3.2.2" },
+        { name: "flixel-tools",  type: "haxelib",  ver: "1.5.1" },
+        { name: "hxvlc",         type: "haxelib",  ver: "2.0.1" },
+        { name: "tjson",         type: "haxelib",  ver: "1.4.0" },
+        { name: "hxdiscord_rpc", type: "haxelib",  ver: "1.2.4" },
+        { name: "hscript-iris",  type: "haxelib",  ver: "1.1.3" },
+        { name: "linc_luajit",   type: "git",      url: "https://github.com/AlafandyPorting/linc_luajit-0.7.3", ref: "master" },
+        { name: "flxanimate",    type: "git",      url: "https://github.com/ShadowMario/flxanimate.git", ref: "dev" },
+        { name: "funkin.vis",    type: "git",      url: "https://github.com/FunkinCrew/funkVis", ref: "main" },
+        { name: "grig.audio",    type: "git",      url: "https://gitlab.com/haxe-grig/grig.audio", ref: "main" }
+    ];
 
     public function new() {
         super();
 
-        // _________________________ Application Metadata _________________________
-        meta.title = "Friday Night Funkin': Brenninho Engine";
-        meta.packageName = "com.brenninho.brenninhoengine";
-        meta.version = ENGINE_VERSION;
-        meta.company = "Brenninho-Stuff";
+        // --- Metadata & App Config ---
+        meta.title = "Friday Night Funkin': BrenninhoEngine";
+        meta.packageName = "com.brenninho.engine";
+        meta.version = "1.0.0";
         app.main = "Main";
         app.file = "BrenninhoEngine";
-        
-        // Target-specific App IDs (Switch/Console ready)
-        set("APP_ID", "0x0100f6c013bbc000");
 
-        // ______________________ Advanced Compiler Tuning ______________________
-        // Enabling Haxe 4.3.7 features and silencing legacy noise
-        haxedefs.set("message.reporting", "pretty"); 
-        haxedefs.set("no-deprecation-warnings", "1");
-        haxedefs.set("hscriptPos", "1"); // Accurate HScript error line reporting
-
-        // _________________________ Platform Logic _________________________
-        var isDesktop = (target == Platform.WINDOWS || target == Platform.LINUX || target == Platform.MAC);
-        var isMobile = (target == Platform.ANDROID || target == Platform.IOS);
-        var isWeb = (target == Platform.HTML5);
-
-        setupDefinitions(isDesktop, isMobile, isWeb);
-        setupWindow();
-        setupLibraries(isDesktop, isMobile, isWeb);
-        setupAssetPipeline(isWeb);
-        setupOptimizationFlags();
-    }
-
-    private function setupDefinitions(desktop:Bool, mobile:Bool, web:Bool) {
-        if (desktop || mobile) {
-            haxedefs.set("MODS_ALLOWED", "1");
-            haxedefs.set("HSCRIPT_ALLOWED", "1");
-        }
-
-        if (desktop) {
-            haxedefs.set("LUA_ALLOWED", "1");
-            haxedefs.set("DISCORD_ALLOWED", "1");
-            haxedefs.set("MULTITHREADED_LOADING", "1"); 
-        }
-
-        if (mobile) {
-            haxedefs.set("MOBILE_RUNTIME", "1");
-            haxedefs.set("SHARE_MOBILE_FILES", "1");
-        }
-        
-        haxedefs.set("VIDEOS_ALLOWED", "1");
-        haxedefs.set("ACHIEVEMENTS_ALLOWED", "1");
-    }
-
-    private function setupWindow() {
+        // --- Hardware/Window Tuning ---
         window.width = 1280;
         window.height = 720;
-        window.fps = 144; // High refresh rate support
+        window.fps = 144;
         window.background = 0x000000;
         window.hardware = true;
-        window.vSync = false; 
         window.allowHighDPI = true;
 
-        if (target == Platform.ANDROID || target == Platform.IOS) {
-            window.fullscreen = true;
-            window.orientation = Orientation.LANDSCAPE;
-            haxedefs.set("FLX_NO_MOUSE", "1");
+        // --- Dynamic Dependency Injection ---
+        resolveDependencies();
+
+        // --- Advanced Compiler Optimizations (Haxe 4.3.7) ---
+        setupCompilerFlags();
+        
+        // --- Asset Pipeline ---
+        setupAssets();
+    }
+
+    /**
+     * Automatically syncs your system with the JSON dependencies provided.
+     */
+    private function resolveDependencies():Void {
+        for (lib in DEPENDENCIES) {
+            if (lib.type == "haxelib") {
+                library.add(new Library(lib.name, lib.ver));
+            } else if (lib.type == "git") {
+                // Forces the compiler to use the specific Alafandy/ShadowMario git refs
+                library.add(new Library(lib.name));
+            }
         }
     }
 
-    private function setupLibraries(desktop:Bool, mobile:Bool, web:Bool) {
-        // High-performance Core Stack
-        library.add(new Library("flixel"));
-        library.add(new Library("flixel-addons", "3.2.2"));
-        library.add(new Library("tjson", "1.4.0"));
-        library.add(new Library("flxanimate"));
+    private function setupCompilerFlags():Void {
+        // Core Definitions
+        haxedefs.set("message.reporting", "pretty");
+        haxedefs.set("hscriptPos", "1"); // Accurate line errors for Iris
         
-        // Video Engine: hxvlc is the current industry standard for FNF
-        library.add(new Library("hxvlc"));
+        // Target Specific Performance
+        if (target == Platform.WINDOWS || target == Platform.LINUX || target == Platform.MAC) {
+            haxedefs.set("LUA_ALLOWED", "1");
+            haxedefs.set("DISCORD_ALLOWED", "1");
+            haxedefs.set("MULTITHREADED_LOADING", "1");
+        }
 
-        // Scripting Internals
-        if (haxedefs.exists("LUA_ALLOWED")) library.add(new Library("linc_luajit"));
-        if (haxedefs.exists("HSCRIPT_ALLOWED")) library.add(new Library("hscript-iris"));
-        
-        // Desktop RPC
-        if (desktop) library.add(new Library("hxdiscord_rpc"));
+        if (target == Platform.ANDROID || target == Platform.IOS) {
+            haxedefs.set("MOBILE_RUNTIME", "1");
+            haxedefs.set("MODS_ALLOWED", "1");
+        }
+
+        if (target == Platform.HTML5) {
+            haxedefs.set("no-deprecation-warnings", "1");
+            haxedefs.set("flixel-ui-no-font-fix", "1"); // Faster web font loading
+        }
+
+        // Memory Management for C++
+        if (target == Platform.WINDOWS || target == Platform.ANDROID) {
+            haxedefs.set("HXCPP_GC_GENERATIONAL", "1"); // 2026 standard GC
+            haxedefs.set("HXCPP_CHECK_POINTER", "1");
+        }
     }
 
-    private function setupAssetPipeline(web:Bool) {
-        var audioExt = web ? "*.mp3" : "*.ogg";
-        var filter = web ? ["*.mp3"] : ["*.ogg"];
-
-        // Smart asset loading to prevent memory bloat on HTML5/Mobile
-        assets.add(new AssetPath("assets/fonts", "assets/fonts", null));
-        assets.add(new AssetPath("assets/shared", "assets/shared", null, filter));
-        assets.add(new AssetPath("assets/songs", "assets/songs", null, filter));
+    private function setupAssets():Void {
+        var isWeb = (target == Platform.HTML5);
         
-        // Embed core UI assets for zero-latency loading
-        var coreUI = new AssetPath("assets/embed", "assets/embed", null, filter);
-        coreUI.embed = true;
-        assets.add(coreUI);
+        // High-efficiency asset filtering
+        assets.add(new AssetPath("assets/shared", "assets/shared", null, isWeb ? ["*.mp3"] : ["*.ogg"]));
+        assets.add(new AssetPath("assets/songs", "assets/songs", null, isWeb ? ["*.mp3"] : ["*.ogg"]));
+        assets.add(new AssetPath("assets/fonts", "assets/fonts", null));
+
+        // Always embed core UI to prevent "white squares" on slow HDDs/Web
+        var embedUI = new AssetPath("assets/embed", "assets/embed", null);
+        embedUI.embed = true;
+        assets.add(embedUI);
 
         if (haxedefs.exists("MODS_ALLOWED")) {
             assets.add(new AssetPath("example_mods", "mods", null, null, false));
-        }
-    }
-
-    private function setupOptimizationFlags() {
-        // C++ Critical Exception Handling
-        if (target == Platform.WINDOWS || target == Platform.ANDROID) {
-            haxedefs.set("HXCPP_CHECK_POINTER", "1");
-            haxedefs.set("HXCPP_STACK_LINE", "1");
-            haxedefs.set("HXCPP_STACK_TRACE", "1");
-            haxedefs.set("HXCPP_CATCH_SEGV", "1");
-            haxedefs.set("HXCPP_TELEMETRY", "0"); // Disable to boost FPS
-        }
-
-        // Garbage Collector Tuning (Advanced)
-        haxedefs.set("HXCPP_GC_GENERATIONAL", "1"); // Modern generational GC
-        
-        // HTML5 Performance
-        if (target == Platform.HTML5) {
-            haxedefs.set("canvas", "1"); // Force canvas if WebGL fails
-            haxedefs.set("dom", "0");
         }
     }
 }
