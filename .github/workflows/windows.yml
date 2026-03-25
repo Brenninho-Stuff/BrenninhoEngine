@@ -1,0 +1,34 @@
+name: Windows Build (Simple)
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Haxe
+        uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: 4.3.7
+
+      - name: Install Libraries
+        run: |
+          haxelib install lime 8.1.2
+          haxelib install openfl 9.3.3
+          haxelib install flixel 5.6.1
+          haxelib run lime setup
+          # Instalação rápida das dependências principais
+          haxelib install flixel-addons 3.2.2
+          haxelib install hxvlc 2.0.1
+          haxelib install tjson 1.4.0
+
+      - name: Compile Game
+        run: haxelib run lime build windows
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-Build
+          path: export/release/windows/bin
